@@ -59,7 +59,7 @@ function toRad(degrees) {
 }
 
 // Get health advice based on AQI value
-function getHealthAdvice(aqi, category) {
+function getHealthAdvice(aqi) {
   if (aqi <= 50) {
     return "Air quality is Good. Enjoy outdoor activities!";
   } else if (aqi <= 100) {
@@ -105,9 +105,10 @@ app.post('/nearest-aqi', async (req, res) => {
     if (nearest.distance > 20) {
       return res.json({
         success: false,
-        message: "معذرت، آپ کے قریب کوئی مانیٹرنگ سٹیشن موجود نہیں۔ قریب ترین سٹیشن " + nearest.distance.toFixed(1) + " کلومیٹر دور ہے۔\n\nSorry, there is no monitoring station near your location. The nearest station is " + nearest.distance.toFixed(1) + "km away.",
+        message: `Sorry, there is no monitoring station near your location. The nearest station is ${nearest.distance.toFixed(1)}km away in ${nearest.city}.\n\nFor air quality information, please contact our helpline: 0800-12345\n\nType 'menu' to return to main menu.`,
         nearest_station: nearest.name,
-        distance_km: nearest.distance.toFixed(1)
+        distance_km: nearest.distance.toFixed(1),
+        city: nearest.city
       });
     }
 
@@ -121,7 +122,7 @@ app.post('/nearest-aqi', async (req, res) => {
     if (aqiData.error || !aqiData.PM25_AQI) {
       return res.json({
         success: false,
-        message: "AQI data is temporarily unavailable for this station. Please try again later or contact helpline: 0800-12345"
+        message: `AQI data is temporarily unavailable for ${nearest.name}.\n\nPlease try again later or contact helpline: 0800-12345\n\nType 'menu' to return to main menu.`
       });
     }
 
@@ -130,12 +131,12 @@ app.post('/nearest-aqi', async (req, res) => {
     const timestamp = aqiData.Date_Time;
     const pm25 = aqiData.PM25;
 
-    const healthAdvice = getHealthAdvice(aqi, category);
+    const healthAdvice = getHealthAdvice(aqi);
 
     // Format response
     const response = {
       success: true,
-      message: `📍 Nearest Station: ${nearest.name}\n📏 Distance: ${nearest.distance.toFixed(1)} km\n\n🌡️ Air Quality Index (AQI): ${aqi}\n📊 Category: ${category}\n⏰ As of: ${timestamp}\n🔬 PM2.5: ${pm25} µg/m³\n\n💡 Health Advisory:\n${healthAdvice}\n\n📞 Helpline: 0800-12345\nType 'menu' to return to main menu.`,
+      message: `Nearest Station: ${nearest.name}\nDistance: ${nearest.distance.toFixed(1)} km away\n\nAir Quality Index (AQI): ${aqi}\nCategory: ${category}\nAs of: ${timestamp}\nPM2.5: ${pm25} µg/m³\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
       data: {
         station_name: nearest.name,
         city: nearest.city,
@@ -169,6 +170,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'EPA AQI Webhook API',
+    version: '1.0.0',
     endpoints: {
       'POST /nearest-aqi': 'Get nearest station AQI based on user location',
       'GET /health': 'Health check'
@@ -179,6 +181,10 @@ app.get('/', (req, res) => {
       body: {
         latitude: 'number (e.g., 31.5204)',
         longitude: 'number (e.g., 74.3587)'
+      },
+      example: {
+        latitude: 31.5204,
+        longitude: 74.3587
       }
     }
   });
