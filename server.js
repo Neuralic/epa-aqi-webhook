@@ -1,5 +1,5 @@
-const express = require("express");
-const axios = require("axios");
+const express = require('express');
+const axios = require('axios');
 
 const app = express();
 app.use(express.json());
@@ -59,7 +59,7 @@ function toRad(degrees) {
 }
 
 // Get health advice based on AQI value
-function getHealthAdvice(aqi) {
+function getHealthAdvice(aqi, category) {
   if (aqi <= 50) {
     return "Air quality is Good. Enjoy outdoor activities!";
   } else if (aqi <= 100) {
@@ -101,37 +101,41 @@ app.post('/nearest-aqi', async (req, res) => {
     stationsWithDistance.sort((a, b) => a.distance - b.distance);
     const nearest = stationsWithDistance[0];
 
-    // --- MODIFIED SECTION START ---
-    // Fetch ALL AQI data from EPA API and then extract for the nearest station
-    const allAqiDataUrl = `https://api.epd-aqms-pk.com/aqi`; // Base URL to get all data
-    const allAqiResponse = await axios.get(allAqiDataUrl, { timeout: 10000 } );
-
-    const allAqiData = allAqiResponse.data;
-
-    // Extract data for the nearest station using its name as the key
-    const aqiData = allAqiData[nearest.name];
-
-    // Check if data is available for the specific station and has the AQI property
-    if (!aqiData || !aqiData.AQI) {
+    // Check if nearest station is within 20km
+    if (nearest.distance > 20) {
       return res.json({
         success: false,
-        message: `AQI data is temporarily unavailable for ${nearest.name}.\n\nPlease try again later or contact helpline: 0800-12345\n\nType 'menu' to return to main menu.`
+        message: "معذرت، آپ کے قریب کوئی مانیٹرنگ سٹیشن موجود نہیں۔ قریب ترین سٹیشن " + nearest.distance.toFixed(1) + " کلومیٹر دور ہے۔\n\nSorry, there is no monitoring station near your location. The nearest station is " + nearest.distance.toFixed(1) + "km away.",
+        nearest_station: nearest.name,
+        distance_km: nearest.distance.toFixed(1)
       });
     }
 
-    const aqi = aqiData.AQI; // Use aqiData.AQI as per the provided JSON
+    // Fetch AQI data from EPA API
+    const apiUrl = `https://api.epd-aqms-pk.com/aqi/${encodeURIComponent(nearest.name)}`;
+    const aqiResponse = await axios.get(apiUrl, { timeout: 10000 });
+
+    const aqiData = aqiResponse.data;
+
+    // Check if data is available
+    if (aqiData.error || !aqiData.PM25_AQI) {
+      return res.json({
+        success: false,
+        message: "AQI data is temporarily unavailable for this station. Please try again later or contact helpline: 0800-12345"
+      });
+    }
+
+    const aqi = aqiData.PM25_AQI;
     const category = aqiData.AQI_category || "Unknown";
     const timestamp = aqiData.Date_Time;
-    const pm25 = aqiData.Dominant_Pollutant; // Using Dominant_Pollutant as a placeholder for PM2.5 if actual PM2.5 is not available
-    // If you need actual PM2.5, you'll need to confirm its exact path in the external API's response for a specific station.
-    // --- MODIFIED SECTION END ---
+    const pm25 = aqiData.PM25;
 
-    const healthAdvice = getHealthAdvice(aqi);
+    const healthAdvice = getHealthAdvice(aqi, category);
 
     // Format response
     const response = {
       success: true,
-      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\nAQI = ${aqi}\nAir Quality : ${category}\nDominant Pollutant: ${pm25}\nLast Updated at: ${timestamp}`,
+      message: `📍 Nearest Station: ${nearest.name}\n📏 Distance: ${nearest.distance.toFixed(1)} km\n\n🌡️ Air Quality Index (AQI): ${aqi}\n📊 Category: ${category}\n⏰ As of: ${timestamp}\n🔬 PM2.5: ${pm25} µg/m³\n\n💡 Health Advisory:\n${healthAdvice}\n\n📞 Helpline: 0800-12345\nType 'menu' to return to main menu.`,
       data: {
         station_name: nearest.name,
         city: nearest.city,
@@ -165,7 +169,6 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'EPA AQI Webhook API',
-    version: '1.0.0',
     endpoints: {
       'POST /nearest-aqi': 'Get nearest station AQI based on user location',
       'GET /health': 'Health check'
@@ -176,10 +179,6 @@ app.get('/', (req, res) => {
       body: {
         latitude: 'number (e.g., 31.5204)',
         longitude: 'number (e.g., 74.3587)'
-      },
-      example: {
-        latitude: 31.5204,
-        longitude: 74.3587
       }
     }
   });
