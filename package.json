@@ -1,0 +1,19 @@
+{
+  "name": "epa-aqi-webhook",
+  "version": "1.0.0",
+  "description": "EPA Punjab AQI Webhook for WhatsApp Bot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["epa", "aqi", "webhook", "whatsapp"],
+  "author": "EPA Punjab",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
