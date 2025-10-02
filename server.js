@@ -59,7 +59,7 @@ function toRad(degrees) {
 }
 
 // Get health advice based on AQI value
-function getHealthAdvice(aqi, category) {
+function getHealthAdvice(aqi) {
   if (aqi <= 50) {
     return "Air quality is Good. Enjoy outdoor activities!";
   } else if (aqi <= 100) {
@@ -105,47 +105,65 @@ app.post('/nearest-aqi', async (req, res) => {
     if (nearest.distance > 20) {
       return res.json({
         success: false,
-        message: "معذرت، آپ کے قریب کوئی مانیٹرنگ سٹیشن موجود نہیں۔ قریب ترین سٹیشن " + nearest.distance.toFixed(1) + " کلومیٹر دور ہے۔\n\nSorry, there is no monitoring station near your location. The nearest station is " + nearest.distance.toFixed(1) + "km away.",
+        message: `Sorry, there is no monitoring station near your location. The nearest station is ${nearest.distance.toFixed(1)}km away in ${nearest.city}.\n\nFor air quality information, please contact our helpline: 0800-12345\n\nType 'menu' to return to main menu.`,
         nearest_station: nearest.name,
-        distance_km: nearest.distance.toFixed(1)
+        distance_km: nearest.distance.toFixed(1),
+        city: nearest.city
       });
     }
 
-    // Fetch AQI data from EPA API
-    const apiUrl = `https://api.epd-aqms-pk.com/aqi/${encodeURIComponent(nearest.name)}`;
+    // Fetch ALL AQI data from EPA API (not individual station)
+    const apiUrl = `https://api.epd-aqms-pk.com/aqi`;
+    console.log('Fetching all stations AQI data from:', apiUrl);
+    
     const aqiResponse = await axios.get(apiUrl, { timeout: 10000 });
+    const allStationsData = aqiResponse.data;
 
-    const aqiData = aqiResponse.data;
+    // Find data for the nearest station
+    const aqiData = allStationsData[nearest.name];
 
-    // Check if data is available
-    if (aqiData.error || !aqiData.PM25_AQI) {
+    // Check if data is available for this specific station
+    if (!aqiData || !aqiData.AQI) {
       return res.json({
         success: false,
-        message: "AQI data is temporarily unavailable for this station. Please try again later or contact helpline: 0800-12345"
+        message: `AQI data is temporarily unavailable for ${nearest.name}.\n\nPlease try again later or contact helpline: 0800-12345\n\nType 'menu' to return to main menu.`,
+        station_name: nearest.name
       });
     }
 
-    const aqi = aqiData.PM25_AQI;
+    const aqi = aqiData.AQI;
     const category = aqiData.AQI_category || "Unknown";
     const timestamp = aqiData.Date_Time;
-    const pm25 = aqiData.PM25;
+    const dominantPollutant = aqiData.Dominant_Pollutant || "PM2.5";
 
-    const healthAdvice = getHealthAdvice(aqi, category);
+    const healthAdvice = getHealthAdvice(aqi);
 
-    // Format response
+    // Format message exactly as client requested
+    const formattedMessage = `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*
+
+AQI = ${aqi}
+Air Quality: ${category}
+Dominant Pollutant: ${dominantPollutant}
+Last Updated at: ${timestamp}
+
+Health Advisory:
+${healthAdvice}
+
+Helpline: 0800-12345
+Type 'menu' to return to main menu.`;
+
+    // Format response - BotSailor compatible (flat structure)
     const response = {
       success: true,
-      message: `📍 Nearest Station: ${nearest.name}\n📏 Distance: ${nearest.distance.toFixed(1)} km\n\n🌡️ Air Quality Index (AQI): ${aqi}\n📊 Category: ${category}\n⏰ As of: ${timestamp}\n🔬 PM2.5: ${pm25} µg/m³\n\n💡 Health Advisory:\n${healthAdvice}\n\n📞 Helpline: 0800-12345\nType 'menu' to return to main menu.`,
-      data: {
-        station_name: nearest.name,
-        city: nearest.city,
-        distance_km: nearest.distance.toFixed(1),
-        aqi: aqi,
-        category: category,
-        pm25: pm25,
-        timestamp: timestamp,
-        health_advice: healthAdvice
-      }
+      message: formattedMessage,
+      station_name: nearest.name,
+      city: nearest.city,
+      distance_km: nearest.distance.toFixed(1),
+      aqi: aqi.toString(),
+      category: category,
+      dominant_pollutant: dominantPollutant,
+      timestamp: timestamp,
+      health_advice: healthAdvice
     };
 
     return res.json(response);
@@ -165,12 +183,23 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'EPA AQI Webhook is running' });
 });
 
+// Test endpoint
+app.post('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: "Test endpoint working! Your payload was received.",
+    received_data: req.body
+  });
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    message: 'EPA AQI Webhook API',
+    message: 'EPA AQI Webhook API - BotSailor Ready',
+    version: '2.0.0',
     endpoints: {
       'POST /nearest-aqi': 'Get nearest station AQI based on user location',
+      'POST /test': 'Test endpoint to verify BotSailor integration',
       'GET /health': 'Health check'
     },
     usage: {
