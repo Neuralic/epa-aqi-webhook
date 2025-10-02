@@ -1,5 +1,5 @@
-const express = require('express');
-const axios = require('axios');
+const express = require("express");
+const axios = require("axios");
 
 const app = express();
 app.use(express.json());
@@ -101,42 +101,37 @@ app.post('/nearest-aqi', async (req, res) => {
     stationsWithDistance.sort((a, b) => a.distance - b.distance);
     const nearest = stationsWithDistance[0];
 
-    // Check if nearest station is within 20km
-    if (nearest.distance > 20) {
-      return res.json({
-        success: false,
-        message: `Sorry, there is no monitoring station near your location. The nearest station is ${nearest.distance.toFixed(1)}km away in ${nearest.city}.\n\nFor air quality information, please contact our helpline: 0800-12345\n\nType 'menu' to return to main menu.`,
-        nearest_station: nearest.name,
-        distance_km: nearest.distance.toFixed(1),
-        city: nearest.city
-      });
-    }
+    // --- MODIFIED SECTION START ---
+    // Fetch ALL AQI data from EPA API and then extract for the nearest station
+    const allAqiDataUrl = `https://api.epd-aqms-pk.com/aqi`; // Base URL to get all data
+    const allAqiResponse = await axios.get(allAqiDataUrl, { timeout: 10000 } );
 
-    // Fetch AQI data from EPA API
-    const apiUrl = `https://api.epd-aqms-pk.com/aqi/${encodeURIComponent(nearest.name)}`;
-    const aqiResponse = await axios.get(apiUrl, { timeout: 10000 });
+    const allAqiData = allAqiResponse.data;
 
-    const aqiData = aqiResponse.data;
+    // Extract data for the nearest station using its name as the key
+    const aqiData = allAqiData[nearest.name];
 
-    // Check if data is available
-    if (aqiData.error || !aqiData.PM25_AQI) {
+    // Check if data is available for the specific station and has the AQI property
+    if (!aqiData || !aqiData.AQI) {
       return res.json({
         success: false,
         message: `AQI data is temporarily unavailable for ${nearest.name}.\n\nPlease try again later or contact helpline: 0800-12345\n\nType 'menu' to return to main menu.`
       });
     }
 
-    const aqi = aqiData.PM25_AQI;
+    const aqi = aqiData.AQI; // Use aqiData.AQI as per the provided JSON
     const category = aqiData.AQI_category || "Unknown";
     const timestamp = aqiData.Date_Time;
-    const pm25 = aqiData.PM25;
+    const pm25 = aqiData.Dominant_Pollutant; // Using Dominant_Pollutant as a placeholder for PM2.5 if actual PM2.5 is not available
+    // If you need actual PM2.5, you'll need to confirm its exact path in the external API's response for a specific station.
+    // --- MODIFIED SECTION END ---
 
     const healthAdvice = getHealthAdvice(aqi);
 
     // Format response
     const response = {
       success: true,
-      message: `Nearest Station: ${nearest.name}\nDistance: ${nearest.distance.toFixed(1)} km away\n\nAir Quality Index (AQI): ${aqi}\nCategory: ${category}\nAs of: ${timestamp}\nPM2.5: ${pm25} µg/m³\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
+      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\nAQI = ${aqi}\nAir Quality : ${category}\nDominant Pollutant: ${pm25}\nLast Updated at: ${timestamp}`,
       data: {
         station_name: nearest.name,
         city: nearest.city,
