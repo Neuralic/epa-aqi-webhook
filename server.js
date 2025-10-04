@@ -26,6 +26,7 @@ async function fetchStations() {
     const response = await axios.get('https://api.epd-aqms-pk.com/coordinates', { timeout: 10000 });
     const stationsData = response.data;
     
+    // Convert object format to array format
     const stationsArray = Object.keys(stationsData).map(name => ({
       name: name,
       lat: stationsData[name].lat,
@@ -36,6 +37,7 @@ async function fetchStations() {
     return stationsArray;
   } catch (error) {
     console.error('Error fetching stations from EPA API:', error.message);
+    // Fallback to hardcoded stations if API fails
     return [
       { name: "Safari Park-LHR", lat: 31.3823, lon: 74.2182 },
       { name: "Kahna Nau Hospital-LHR", lat: 31.3710, lon: 74.3651 },
@@ -68,7 +70,7 @@ async function fetchStations() {
 
 // Helper function to calculate distance using Haversine formula
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
+  const R = 6371; // Earth's radius in kilometers
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -81,11 +83,14 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Helper function to fetch AQI data for all stations
-async function fetchAQIData() {
-  const response = await axios.get('https://api.epd-aqms-pk.com/aqi', {
+// Helper function to fetch AQI data for a specific station
+async function fetchStationAQI(stationName) {
+  // URL encode the station name
+  const encodedName = encodeURIComponent(stationName);
+  const response = await axios.get(`https://api.epd-aqms-pk.com/aqi/${encodedName}`, {
     timeout: 15000,
   });
+  console.log(`AQI data for ${stationName}:`, response.data);
   return response.data;
 }
 
@@ -121,6 +126,7 @@ app.post('/nearest-aqi', async (req, res) => {
     const userLat = parseFloat(latitude);
     const userLon = parseFloat(longitude);
 
+    // Fetch live stations
     const liveStations = await fetchStations();
     
     const stationsWithDistance = liveStations.map(station => ({
@@ -131,8 +137,7 @@ app.post('/nearest-aqi', async (req, res) => {
     stationsWithDistance.sort((a, b) => a.distance - b.distance);
     const nearest = stationsWithDistance[0];
 
-    const allStationsData = await fetchAQIData();
-    const aqiData = allStationsData[nearest.name];
+    const aqiData = await fetchStationAQI(nearest.name);
 
     if (!aqiData || !aqiData.AQI) {
       return res.json({
@@ -179,12 +184,14 @@ app.post('/botsailor-location', async (req, res) => {
       });
     }
 
-    const botsailorApiUrl = `https://convodat.site/api/v1/whatsapp/get/conversation?apiToken=13881|CsusyanDTZNgwDfofBDycCCmiBmkfd0G5R9vN7Qtca3c6006&phone_number_id=740840432454977&phone_number=${phone_number}&limit=2&offset=1`;
+    // Step 1: Get last 5 messages from BotSailor to extract GPS location
+    const botsailorApiUrl = `https://convodat.site/api/v1/whatsapp/get/conversation?apiToken=13881|CsusyanDTZNgwDfofBDycCCmiBmkfd0G5R9vN7Qtca3c6006&phone_number_id=740840432454977&phone_number=${phone_number}&limit=5&offset=1`;
     
     const conversationResponse = await axios.get(botsailorApiUrl, { timeout: 15000 });
     
     console.log('BotSailor API Response:', JSON.stringify(conversationResponse.data, null, 2));
     
+    // Step 2: Extract location from messages
     let latitude = null;
     let longitude = null;
     
@@ -217,6 +224,7 @@ app.post('/botsailor-location', async (req, res) => {
 
     console.log('Extracted GPS:', { latitude, longitude });
 
+    // Step 3: Find nearest station
     const liveStations = await fetchStations();
     const userLat = parseFloat(latitude);
     const userLon = parseFloat(longitude);
@@ -229,14 +237,10 @@ app.post('/botsailor-location', async (req, res) => {
     stationsWithDistance.sort((a, b) => a.distance - b.distance);
     const nearest = stationsWithDistance[0];
 
-    const allStationsData = await fetchAQIData();
+    // Step 4: Get AQI data for the nearest station only
+    const aqiData = await fetchStationAQI(nearest.name);
     
-    console.log('Available stations in AQI data:', allStationsData ? Object.keys(allStationsData).join(', ') : 'none');
-    console.log('Looking for station:', nearest.name);
-    
-    const aqiData = allStationsData ? allStationsData[nearest.name] : null;
-
-    if (!aqiData) {
+    if (!aqiData || aqiData.error || !aqiData.AQI) {
       console.error('AQI data not found for station:', nearest.name);
       return res.json({
         success: false,
@@ -248,16 +252,17 @@ app.post('/botsailor-location', async (req, res) => {
 
     const healthAdvice = getHealthAdvice(aqiData.AQI);
 
+    // Step 5: Store result and return
     const result = {
       success: true,
       distance: nearest.distance.toFixed(1),
       station_name: nearest.name,
       aqi: aqiData.AQI.toString(),
       air_category: aqiData.AQI_category,
-      pollutant: aqiData.Dominant_Pollutant || "PM25",
+      pollutant: aqiData.Dominant_Pollutant || "PM2.5",
       last_updated: aqiData.Date_Time,
       health_advice: healthAdvice,
-      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM25"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
+      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM2.5"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
       timestamp: Date.now()
     };
 
@@ -273,6 +278,7 @@ app.post('/botsailor-location', async (req, res) => {
   }
 });
 
+// Endpoint to retrieve stored GPS results
 app.get('/get-aqi/:subscriber_id', (req, res) => {
   const { subscriber_id } = req.params;
   
@@ -288,6 +294,7 @@ app.get('/get-aqi/:subscriber_id', (req, res) => {
   return res.json(result);
 });
 
+// Health check endpoint
 app.get('/', (req, res) => {
   res.json({ 
     status: 'EPA AQI Webhook Server Running',
