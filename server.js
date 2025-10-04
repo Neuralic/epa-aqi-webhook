@@ -42,6 +42,10 @@ const stations = [
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Storage for subscriber AQI results
+const subscriberResults = new Map();
+const RESULT_TTL = 30 * 60 * 1000; // 30 minutes
+
 // Calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth's radius in km
