@@ -201,15 +201,22 @@ app.post('/botsailor-location', async (req, res) => {
       for (const key in messages) {
         const messageContent = messages[key].message_content;
         if (messageContent) {
-          const parsedContent = JSON.parse(messageContent);
-          
-          if (parsedContent.entry && parsedContent.entry[0]?.changes) {
-            const msgs = parsedContent.entry[0].changes[0]?.value?.messages;
-            if (msgs && msgs[0]?.location) {
-              latitude = msgs[0].location.latitude;
-              longitude = msgs[0].location.longitude;
-              break;
+          try {
+            const parsedContent = JSON.parse(messageContent);
+            
+            if (parsedContent.entry && parsedContent.entry[0]?.changes) {
+              const msgs = parsedContent.entry[0].changes[0]?.value?.messages;
+              if (msgs && msgs[0]?.location) {
+                latitude = msgs[0].location.latitude;
+                longitude = msgs[0].location.longitude;
+                console.log('Found location in message:', key);
+                break;
+              }
             }
+          } catch (parseError) {
+            // Skip messages that aren't valid JSON (like "HTTP API triggered")
+            console.log(`Skipping non-JSON message: ${messageContent.slice(0, 50)}`);
+            continue;
           }
         }
       }
