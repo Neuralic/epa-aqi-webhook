@@ -237,22 +237,21 @@ app.post('/botsailor-location', async (req, res) => {
     const nearest = stationsWithDistance[0];
 
     // Step 4: Get AQI data
-    const { data: allStationsData } = await fetchAQIData();
+    const allStationsData = await fetchAQIData();
     
-    console.log('Available stations in AQI data:', Object.keys(allStationsData));
+    console.log('Type of AQI data:', typeof allStationsData);
+    console.log('Available stations in AQI data:', allStationsData ? Object.keys(allStationsData).join(', ') : 'none');
     console.log('Looking for station:', nearest.name);
     
-    const aqiData = allStationsData[nearest.name];
+    const aqiData = allStationsData ? allStationsData[nearest.name] : null;
 
-    if (!aqiData || !aqiData.AQI) {
+    if (!aqiData) {
       console.error('AQI data not found for station:', nearest.name);
-      console.log('Available stations:', Object.keys(allStationsData).join(', '));
       return res.json({
         success: false,
         message: `AQI data unavailable for ${nearest.name}. Please try again later.`,
         distance: nearest.distance.toFixed(1),
-        station_name: nearest.name,
-        available_stations: Object.keys(allStationsData)
+        station_name: nearest.name
       });
     }
 
