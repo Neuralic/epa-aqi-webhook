@@ -1,3 +1,27 @@
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// In-memory storage for GPS results (expires after 30 minutes)
+const gpsResults = new Map();
+
+// Clean up old results every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of gpsResults.entries()) {
+    if (now - value.timestamp > 30 * 60 * 1000) {
+      gpsResults.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
 // Function to fetch live stations from EPA API
 async function fetchStations() {
   try {
@@ -45,3 +69,243 @@ async function fetchStations() {
     ];
   }
 }
+
+// Helper function to calculate distance using Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Helper function to fetch AQI data for all stations
+async function fetchAQIData() {
+  const response = await axios.get('https://api.epd-aqms-pk.com/aqi', {
+    timeout: 15000,
+  });
+  return response.data;
+}
+
+// Helper function to get health advice based on AQI
+function getHealthAdvice(aqi) {
+  if (aqi <= 50) {
+    return "Air quality is good. Enjoy outdoor activities!";
+  } else if (aqi <= 100) {
+    return "Air quality is acceptable. Sensitive individuals should consider limiting prolonged outdoor exertion.";
+  } else if (aqi <= 150) {
+    return "Unhealthy for sensitive groups. Children, elderly, and people with respiratory/heart conditions should limit outdoor activities.";
+  } else if (aqi <= 200) {
+    return "Unhealthy. Everyone should limit prolonged outdoor exertion. Sensitive groups should avoid outdoor activities.";
+  } else if (aqi <= 300) {
+    return "Very unhealthy. Everyone should avoid prolonged outdoor exertion. Use N95 masks if going outside.";
+  } else {
+    return "Hazardous. Everyone should avoid all outdoor activities. Stay indoors with air purifiers.";
+  }
+}
+
+// Original endpoint for city-based AQI
+app.post('/nearest-aqi', async (req, res) => {
+  try {
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: "Latitude and longitude are required"
+      });
+    }
+
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+
+    // Fetch live stations
+    const liveStations = await fetchStations();
+    
+    const stationsWithDistance = liveStations.map(station => ({
+      ...station,
+      distance: calculateDistance(userLat, userLon, station.lat, station.lon)
+    }));
+
+    stationsWithDistance.sort((a, b) => a.distance - b.distance);
+    const nearest = stationsWithDistance[0];
+
+    const { data: allStationsData } = await fetchAQIData();
+    const aqiData = allStationsData[nearest.name];
+
+    if (!aqiData || !aqiData.AQI) {
+      return res.json({
+        success: false,
+        message: `AQI data unavailable for ${nearest.name}. Please try again later.`,
+        station_name: nearest.name,
+        distance: nearest.distance.toFixed(1)
+      });
+    }
+
+    const healthAdvice = getHealthAdvice(aqiData.AQI);
+
+    return res.json({
+      success: true,
+      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM2.5"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
+      distance: nearest.distance.toFixed(1),
+      station_name: nearest.name,
+      aqi: aqiData.AQI.toString(),
+      category: aqiData.AQI_category,
+      dominant_pollutant: aqiData.Dominant_Pollutant || "PM2.5",
+      timestamp: aqiData.Date_Time,
+      health_advice: healthAdvice
+    });
+  } catch (error) {
+    console.error('Error in /nearest-aqi:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching AQI data. Please try again later."
+    });
+  }
+});
+
+// New endpoint for BotSailor GPS integration
+app.post('/botsailor-location', async (req, res) => {
+  try {
+    const { subscriber_id, phone_number } = req.body;
+    
+    console.log('Received from BotSailor:', { subscriber_id, phone_number });
+    
+    if (!phone_number) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required"
+      });
+    }
+
+    // Step 1: Get last 2 messages from BotSailor to extract GPS location
+    const botsailorApiUrl = `https://convodat.site/api/v1/whatsapp/get/conversation?apiToken=13881|CsusyanDTZNgwDfofBDycCCmiBmkfd0G5R9vN7Qtca3c6006&phone_number_id=740840432454977&phone_number=${phone_number}&limit=2&offset=1`;
+    
+    const conversationResponse = await axios.get(botsailorApiUrl, { timeout: 15000 });
+    
+    console.log('BotSailor API Response:', JSON.stringify(conversationResponse.data, null, 2));
+    
+    // Step 2: Extract location from messages
+    let latitude = null;
+    let longitude = null;
+    
+    if (conversationResponse.data && conversationResponse.data.message) {
+      const messages = JSON.parse(conversationResponse.data.message);
+      
+      for (const key in messages) {
+        const messageContent = messages[key].message_content;
+        if (messageContent) {
+          const parsedContent = JSON.parse(messageContent);
+          
+          if (parsedContent.entry && parsedContent.entry[0]?.changes) {
+            const msgs = parsedContent.entry[0].changes[0]?.value?.messages;
+            if (msgs && msgs[0]?.location) {
+              latitude = msgs[0].location.latitude;
+              longitude = msgs[0].location.longitude;
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    if (!latitude || !longitude) {
+      return res.json({
+        success: false,
+        message: "No location data found in recent messages. Please share your location first."
+      });
+    }
+
+    console.log('Extracted GPS:', { latitude, longitude });
+
+    // Step 3: Find nearest station
+    const liveStations = await fetchStations();
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+
+    const stationsWithDistance = liveStations.map(station => ({
+      ...station,
+      distance: calculateDistance(userLat, userLon, station.lat, station.lon)
+    }));
+
+    stationsWithDistance.sort((a, b) => a.distance - b.distance);
+    const nearest = stationsWithDistance[0];
+
+    // Step 4: Get AQI data
+    const { data: allStationsData } = await fetchAQIData();
+    const aqiData = allStationsData[nearest.name];
+
+    if (!aqiData || !aqiData.AQI) {
+      return res.json({
+        success: false,
+        message: `AQI data unavailable for ${nearest.name}. Please try again later.`,
+        distance: nearest.distance.toFixed(1),
+        station_name: nearest.name
+      });
+    }
+
+    const healthAdvice = getHealthAdvice(aqiData.AQI);
+
+    // Step 5: Store result and return
+    const result = {
+      success: true,
+      distance: nearest.distance.toFixed(1),
+      station_name: nearest.name,
+      aqi: aqiData.AQI.toString(),
+      air_category: aqiData.AQI_category,
+      pollutant: aqiData.Dominant_Pollutant || "PM2.5",
+      last_updated: aqiData.Date_Time,
+      health_advice: healthAdvice,
+      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM2.5"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
+      timestamp: Date.now()
+    };
+
+    gpsResults.set(subscriber_id, result);
+    return res.json(result);
+
+  } catch (error) {
+    console.error('Error in botsailor-location endpoint:', error.message);
+    return res.json({
+      success: false,
+      message: "Error processing location. Please try again or contact helpline: 0800-12345"
+    });
+  }
+});
+
+// Endpoint to retrieve stored GPS results
+app.get('/get-aqi/:subscriber_id', (req, res) => {
+  const { subscriber_id } = req.params;
+  
+  const result = gpsResults.get(subscriber_id);
+  
+  if (!result) {
+    return res.json({
+      success: false,
+      message: "No location data found. Please share your location first."
+    });
+  }
+  
+  return res.json(result);
+});
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'EPA AQI Webhook Server Running',
+    endpoints: {
+      cityBased: 'POST /nearest-aqi',
+      gpsStore: 'POST /botsailor-location',
+      gpsRetrieve: 'GET /get-aqi/:subscriber_id'
+    }
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`EPA AQI server running on port ${PORT}`);
+});
