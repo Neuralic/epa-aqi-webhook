@@ -91,6 +91,16 @@ async function fetchStationAQI(stationName) {
     timeout: 15000,
   });
   console.log(`AQI data for ${stationName}:`, response.data);
+  
+  // The API returns data nested: {"Station Name": {AQI, ...}}
+  // Extract the actual data object
+  if (response.data && typeof response.data === 'object') {
+    const stationData = response.data[stationName];
+    if (stationData) {
+      return stationData;
+    }
+  }
+  
   return response.data;
 }
 
