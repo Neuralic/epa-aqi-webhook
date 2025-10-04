@@ -83,12 +83,14 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Helper function to fetch AQI data for all stations
-async function fetchAQIData() {
-  const response = await axios.get('https://api.epd-aqms-pk.com/aqi', {
+// Helper function to fetch AQI data for a specific station
+async function fetchStationAQI(stationName) {
+  // URL encode the station name
+  const encodedName = encodeURIComponent(stationName);
+  const response = await axios.get(`https://api.epd-aqms-pk.com/aqi/${encodedName}`, {
     timeout: 15000,
   });
-  console.log('Raw AQI API response structure:', JSON.stringify(response.data).slice(0, 500));
+  console.log(`AQI data for ${stationName}:`, response.data);
   return response.data;
 }
 
