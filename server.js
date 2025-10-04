@@ -88,6 +88,7 @@ async function fetchAQIData() {
   const response = await axios.get('https://api.epd-aqms-pk.com/aqi', {
     timeout: 15000,
   });
+  console.log('Raw AQI API response structure:', JSON.stringify(response.data).slice(0, 500));
   return response.data;
 }
 
