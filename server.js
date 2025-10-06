@@ -323,6 +323,94 @@ app.get('/', (req, res) => {
   });
 });
 
+// New endpoint: Get AQI for all stations in a city
+app.get('/aqi-city/:cityname', async (req, res) => {
+  try {
+    const { cityname } = req.params;
+    
+    console.log(`Fetching AQI data for city: ${cityname}`);
+    
+    // Fetch all AQI data from EPA API
+    const response = await axios.get('https://api.epd-aqms-pk.com/aqi', {
+      timeout: 15000,
+    });
+    
+    const allAQIData = response.data;
+    
+    // City suffix mapping
+    const citySuffixes = {
+      'lahore': 'LHR',
+      'lhr': 'LHR',
+      'multan': 'Multan',
+      'faisalabad': 'Faisalabad',
+      'gujranwala': 'Gujranwala',
+      'rawalpindi': 'Rawalpindi',
+      'sargodha': 'Sargodha',
+      'sialkot': 'Sialkot',
+      'bahawalpur': 'Bahawalpur',
+      'dgkhan': 'DG Khan',
+      'dg khan': 'DG Khan',
+      'sheikhupura': 'Sheikhupura'
+    };
+    
+    const cityKey = cityname.toLowerCase();
+    const cityPattern = citySuffixes[cityKey] || cityname;
+    
+    // Filter stations that match the city
+    const cityStations = [];
+    for (const stationName in allAQIData) {
+      if (stationName.includes(cityPattern)) {
+        const stationData = allAQIData[stationName];
+        cityStations.push({
+          name: stationName,
+          aqi: stationData.AQI,
+          category: stationData.AQI_category,
+          pollutant: stationData.Dominant_Pollutant,
+          updated: stationData.Date_Time
+        });
+      }
+    }
+    
+    if (cityStations.length === 0) {
+      return res.json({
+        success: false,
+        message: `No stations found for ${cityname}`
+      });
+    }
+    
+    // Sort by AQI (highest first)
+    cityStations.sort((a, b) => b.aqi - a.aqi);
+    
+    // Format message - clean, compact format
+    let message = `Air Quality Summary - ${cityname.toUpperCase()}\n\n`;
+    
+    cityStations.forEach((station, index) => {
+      message += `Station Name: ${station.name}\n`;
+      message += `AQI: ${station.aqi}\n`;
+      message += `Air Quality: ${station.category}\n`;
+      message += `Pollutant: ${station.pollutant}\n`;
+      message += `Updated: ${station.updated}\n\n`;
+    });
+    
+    message += `Helpline: 0800-12345`;
+    
+    return res.json({
+      success: true,
+      city: cityname,
+      station_count: cityStations.length,
+      stations: cityStations,
+      message: message
+    });
+    
+  } catch (error) {
+    console.error('Error in /aqi-city:', error.message);
+    return res.json({
+      success: false,
+      message: "Error fetching city AQI data. Please try again."
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`EPA AQI server running on port ${PORT}`);
 });
