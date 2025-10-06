@@ -381,18 +381,19 @@ app.get('/aqi-city/:cityname', async (req, res) => {
     // Sort by AQI (highest first)
     cityStations.sort((a, b) => b.aqi - a.aqi);
     
-    // Format message - clean, compact format
-    let message = `Air Quality Summary - ${cityname.toUpperCase()}\n\n`;
+    // Format message - WhatsApp friendly with proper spacing
+    let message = `*Air Quality Summary - ${cityname.toUpperCase()}*\n\n`;
     
     cityStations.forEach((station, index) => {
-      message += `Station Name: ${station.name}\n`;
-      message += `AQI: ${station.aqi}\n`;
-      message += `Air Quality: ${station.category}\n`;
-      message += `Pollutant: ${station.pollutant}\n`;
-      message += `Updated: ${station.updated}\n\n`;
+      message += `*Station:* ${station.name}\n`;
+      message += `*AQI:* ${station.aqi}\n`;
+      message += `*Air Quality:* ${station.category}\n`;
+      message += `*Pollutant:* ${station.pollutant}\n`;
+      message += `*Updated:* ${station.updated}\n`;
+      message += `────────────────\n\n`;
     });
     
-    message += `Helpline: 0800-12345`;
+    message += `📞 *Helpline:* 0800-12345`;
     
     return res.json({
       success: true,
