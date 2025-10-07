@@ -381,20 +381,42 @@ app.get('/aqi-city/:cityname', async (req, res) => {
     // Sort by AQI (highest first)
     cityStations.sort((a, b) => b.aqi - a.aqi);
     
-    // Format message - using bullets and spacing instead of line breaks
-    let message = `*Air Quality Summary - ${cityname.toUpperCase()}*     `;
+    // Calculate average AQI for the city
+    const totalAQI = cityStations.reduce((sum, station) => sum + station.aqi, 0);
+    const averageAQI = Math.round(totalAQI / cityStations.length);
     
-    cityStations.forEach((station, index) => {
-      message += `🏥 *${station.name}*  •  AQI: *${station.aqi}* (${station.category})  •  ${station.pollutant}     `;
+    // Determine air quality category based on average AQI
+    let category;
+    if (averageAQI <= 50) category = "Good";
+    else if (averageAQI <= 100) category = "Satisfactory";
+    else if (averageAQI <= 150) category = "Moderate";
+    else if (averageAQI <= 200) category = "Unhealthy for sensitive group";
+    else if (averageAQI <= 300) category = "Unhealthy";
+    else category = "Hazardous";
+    
+    // Get most common pollutant
+    const pollutantCounts = {};
+    cityStations.forEach(station => {
+      pollutantCounts[station.pollutant] = (pollutantCounts[station.pollutant] || 0) + 1;
     });
+    const dominantPollutant = Object.keys(pollutantCounts).reduce((a, b) => 
+      pollutantCounts[a] > pollutantCounts[b] ? a : b
+    );
     
-    message += `📞 Helpline: *1373*`;
+    // Format simple message with average
+    let message = `*Air Quality - ${cityname.toUpperCase()}*\n\n`;
+    message += `*Average AQI:* ${averageAQI}\n`;
+    message += `*Air Quality:* ${category}\n`;
+    message += `*Dominant Pollutant:* ${dominantPollutant}\n`;
+    message += `*Based on:* ${cityStations.length} monitoring stations\n\n`;
     
     return res.json({
       success: true,
       city: cityname,
       station_count: cityStations.length,
-      stations: cityStations,
+      average_aqi: averageAQI,
+      air_category: category,
+      dominant_pollutant: dominantPollutant,
       message: message
     });
     
