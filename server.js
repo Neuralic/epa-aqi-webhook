@@ -397,7 +397,7 @@ app.get('/aqi-city/:cityname', async (req, res) => {
 `;
     });
     
-    message += `📞 *Helpline:* 0800-12345`;
+    message += `📞 *Helpline:* 1373`;
     
     return res.json({
       success: true,
