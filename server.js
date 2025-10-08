@@ -241,8 +241,8 @@ app.post('/botsailor-location', async (req, res) => {
       });
     }
 
-    // Step 1: Get last 5 messages from BotSailor to extract GPS location
-    const botsailorApiUrl = `https://convodat.site/api/v1/whatsapp/get/conversation?apiToken=13881|CsusyanDTZNgwDfofBDycCCmiBmkfd0G5R9vN7Qtca3c6006&phone_number_id=740840432454977&phone_number=${phone_number}&limit=5&offset=1`;
+    // Step 1: Get last 10 messages from BotSailor to extract GPS location (increased to capture all location shares)
+    const botsailorApiUrl = `https://convodat.site/api/v1/whatsapp/get/conversation?apiToken=13881|CsusyanDTZNgwDfofBDycCCmiBmkfd0G5R9vN7Qtca3c6006&phone_number_id=740840432454977&phone_number=${phone_number}&limit=10&offset=1`;
     
     const conversationResponse = await axios.get(botsailorApiUrl, { timeout: 15000 });
     
@@ -251,6 +251,7 @@ app.post('/botsailor-location', async (req, res) => {
     // Step 2: Extract location from messages
     let latitude = null;
     let longitude = null;
+    let latestTimestamp = 0;
     
     if (conversationResponse.data && conversationResponse.data.message) {
       const messages = JSON.parse(conversationResponse.data.message);
@@ -264,10 +265,16 @@ app.post('/botsailor-location', async (req, res) => {
             if (parsedContent.entry && parsedContent.entry[0]?.changes) {
               const msgs = parsedContent.entry[0].changes[0]?.value?.messages;
               if (msgs && msgs[0]?.location) {
-                latitude = msgs[0].location.latitude;
-                longitude = msgs[0].location.longitude;
-                console.log('Found location in message:', key);
-                break;
+                const loc = msgs[0].location;
+                const timestamp = parseInt(msgs[0].timestamp) || 0;
+                
+                // Only use this location if it's newer than what we have
+                if (loc.latitude && loc.longitude && timestamp > latestTimestamp) {
+                  latitude = loc.latitude;
+                  longitude = loc.longitude;
+                  latestTimestamp = timestamp;
+                  console.log(`Found location at timestamp ${timestamp}:`, loc);
+                }
               }
             }
           } catch (parseError) {
@@ -343,7 +350,7 @@ app.post('/botsailor-location', async (req, res) => {
     console.error('Error in botsailor-location endpoint:', error.message);
     return res.json({
       success: false,
-      message: "Error processing location. Please try again or contact helpline: 0800-12345"
+      message: "Error processing location. Please try again"
     });
   }
 });
