@@ -419,7 +419,7 @@ app.get('/aqi-city/:cityname', async (req, res) => {
     if (cityStations.length === 0) {
       return res.json({
         success: false,
-        message: `No stations found for ${cityname}`
+        message: `No stations found for ${decodedCity}`
       });
     }
     
@@ -451,20 +451,29 @@ app.get('/aqi-city/:cityname', async (req, res) => {
     // Get bilingual health advisory
     const advisory = getHealthAdvisory(averageAQI);
     
+    // Get the latest update time from all stations
+    const latestUpdate = cityStations.reduce((latest, station) => {
+      const stationTime = new Date(station.updated);
+      const latestTime = new Date(latest);
+      return stationTime > latestTime ? station.updated : latest;
+    }, cityStations[0].updated);
+    
     // Format message with clean visual styling
-    let message = `🌫️ *Air Quality - ${cityname.toUpperCase()}*\n\n`;
+    let message = `🌫️ *Air Quality - ${decodedCity.toUpperCase()}*\n\n`;
     message += `*Average AQI:* _${averageAQI}_  (${category})\n`;
     message += `*Dominant Pollutant:* ${dominantPollutant}\n`;
-    message += `*Monitoring Stations:* ${cityStations.length}\n\n`;
+    message += `*Monitoring Stations:* ${cityStations.length}\n`;
+    message += `*Last Updated:* ${latestUpdate}\n\n`;
     message += `📞 *Helpline:* 1373`;
     
     return res.json({
       success: true,
-      city: cityname,
+      city: decodedCity,
       station_count: cityStations.length,
       average_aqi: averageAQI,
       air_category: category,
       dominant_pollutant: dominantPollutant,
+      last_updated: latestUpdate,
       advisory_english: advisory.english,
       advisory_urdu: advisory.urdu,
       message: message
