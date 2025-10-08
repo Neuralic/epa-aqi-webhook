@@ -138,32 +138,32 @@ function getHealthAdvisory(aqi) {
   if (aqi <= 50) {
     return {
       english: "Air quality is good. Ideal for outdoor activities.",
-      urdu: "ÛÙˆØ§ Ú©Ø§ Ù…Ø¹ÛŒØ§Ø± Ø§Ú†Ú¾Ø§ ÛÛ'Û" Ø¨Ø§ÛØ± Ú©ÛŒ Ø³Ø±Ú¯Ø±Ù…ÛŒÙˆÚº Ú©Û' Ù„ÛŒÛ' Ù…ÙˆØ²ÙˆÚº ÛÛ'Û""
+      urdu: "ہوا کا معیار اچھا ہے۔ باہر کی سرگرمیوں کے لیے موزوں ہے۔"
     };
   } else if (aqi <= 100) {
     return {
       english: "Air quality is satisfactory. Unusually sensitive people should consider limiting prolonged outdoor exertion.",
-      urdu: "ÛÙˆØ§ Ú©Ø§ Ù…Ø¹ÛŒØ§Ø± ØªØ³Ù„ÛŒ Ø¨Ø®Ø´ ÛÛ'Û" Ø­Ø³Ø§Ø³ Ø§ÙØ±Ø§Ø¯ Ú©Ùˆ Ø·ÙˆÛŒÙ„ Ø¨ÛŒØ±ÙˆÙ†ÛŒ Ø³Ø±Ú¯Ø±Ù…ÛŒÙˆÚº Ú©Ùˆ Ù…Ø­Ø¯ÙˆØ¯ Ú©Ø±Ù†Û' Ù¾Ø± ØºÙˆØ± Ú©Ø±Ù†Ø§ Ú†Ø§ÛÛŒÛ'Û""
+      urdu: "ہوا کا معیار تسلی بخش ہے۔ حساس افراد کو طویل بیرونی سرگرمیوں کو محدود کرنے پر غور کرنا چاہیے۔"
     };
   } else if (aqi <= 150) {
     return {
       english: "Unhealthy for sensitive groups. Children, elderly, pregnant women, and people with respiratory conditions should reduce outdoor activities.",
-      urdu: "Ø­Ø³Ø§Ø³ Ú¯Ø±ÙˆÙ¾ÙˆÚº Ú©Û' Ù„ÛŒÛ' Ù†Ù‚ØµØ§Ù† Ø¯ÛÛ" Ø¨Ú†ÙˆÚºØŒ Ø¨Ø²Ø±Ú¯ÙˆÚºØŒ Ø­Ø§Ù…Ù„Û Ø®ÙˆØ§ØªÛŒÙ† Ø§ÙˆØ± Ø³Ø§Ù†Ø³ Ú©ÛŒ Ø¨ÛŒÙ…Ø§Ø±ÛŒÙˆÚº ÙˆØ§Ù„Û' Ø§ÙØ±Ø§Ø¯ Ú©Ùˆ Ø¨ÛŒØ±ÙˆÙ†ÛŒ Ø³Ø±Ú¯Ø±Ù…ÛŒØ§Úº Ú©Ù… Ú©Ø±Ù†ÛŒ Ú†Ø§ÛØ¦ÛŒÚºÛ""
+      urdu: "حساس گروپوں کے لیے نقصان دہ۔ بچوں، بزرگوں، حاملہ خواتین اور سانس کی بیماریوں والے افراد کو بیرونی سرگرمیاں کم کرنی چاہئیں۔"
     };
   } else if (aqi <= 200) {
     return {
       english: "Unhealthy. Everyone should limit prolonged outdoor exertion. Sensitive groups should avoid outdoor activities. Use N95 masks if going outside.",
-      urdu: "Ù†Ù‚ØµØ§Ù† Ø¯ÛÛ" Ø³Ø¨ Ú©Ùˆ Ø·ÙˆÛŒÙ„ Ø¨ÛŒØ±ÙˆÙ†ÛŒ Ø³Ø±Ú¯Ø±Ù…ÛŒØ§Úº Ù…Ø­Ø¯ÙˆØ¯ Ú©Ø±Ù†ÛŒ Ú†Ø§ÛØ¦ÛŒÚºÛ" Ø­Ø³Ø§Ø³ Ú¯Ø±ÙˆÙ¾Ø³ Ú©Ùˆ Ø¨Ø§ÛØ± Ø¬Ø§Ù†Û' Ø³Û' Ú¯Ø±ÛŒØ² Ú©Ø±Ù†Ø§ Ú†Ø§ÛÛŒÛ'Û" Ø¨Ø§ÛØ± Ø¬Ø§ØªÛ' ÙˆÙ‚Øª N95 Ù…Ø§Ø³Ú© Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ú©Ø±ÛŒÚºÛ""
+      urdu: "نقصان دہ۔ سب کو طویل بیرونی سرگرمیاں محدود کرنی چاہئیں۔ حساس گروپس کو باہر جانے سے گریز کرنا چاہیے۔ باہر جاتے وقت N95 ماسک استعمال کریں۔"
     };
   } else if (aqi <= 300) {
     return {
       english: "Very unhealthy. Everyone should avoid all outdoor physical activities. Keep windows closed. Use air purifiers indoors.",
-      urdu: "Ø¨ÛØª Ù†Ù‚ØµØ§Ù† Ø¯ÛÛ" Ø³Ø¨ Ú©Ùˆ ØªÙ…Ø§Ù… Ø¨ÛŒØ±ÙˆÙ†ÛŒ Ø¬Ø³Ù…Ø§Ù†ÛŒ Ø³Ø±Ú¯Ø±Ù…ÛŒÙˆÚº Ø³Û' Ú¯Ø±ÛŒØ² Ú©Ø±Ù†Ø§ Ú†Ø§ÛÛŒÛ'Û" Ú©Ú¾Ú'Ú©ÛŒØ§Úº Ø¨Ù†Ø¯ Ø±Ú©Ú¾ÛŒÚºÛ" Ú¯Ú¾Ø± Ú©Û' Ø§Ù†Ø¯Ø± Ø§ÛŒØ¦Ø± Ù¾ÛŒÙˆØ±ÛŒÙØ§Ø¦Ø± Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ú©Ø±ÛŒÚºÛ""
+      urdu: "بہت نقصان دہ۔ سب کو تمام بیرونی جسمانی سرگرمیوں سے گریز کرنا چاہیے۔ کھڑکیاں بند رکھیں۔ گھر کے اندر ایئر پیوریفائر استعمال کریں۔"
     };
   } else {
     return {
       english: "Hazardous. Health emergency. Everyone should avoid all outdoor activities. Stay indoors with windows and doors sealed. Use air purifiers.",
-      urdu: "Ø§Ù†ØªÛØ§Ø¦ÛŒ Ø®Ø·Ø±Ù†Ø§Ú©Û" ØµØ­Øª Ú©ÛŒ Ø§ÛŒÙ…Ø±Ø¬Ù†Ø³ÛŒÛ" Ø³Ø¨ Ú©Ùˆ ØªÙ…Ø§Ù… Ø¨ÛŒØ±ÙˆÙ†ÛŒ Ø³Ø±Ú¯Ø±Ù…ÛŒÙˆÚº Ø³Û' Ú¯Ø±ÛŒØ² Ú©Ø±Ù†Ø§ Ú†Ø§ÛÛŒÛ'Û" Ú©Ú¾Ú'Ú©ÛŒØ§Úº Ø§ÙˆØ± Ø¯Ø±ÙˆØ§Ø²Û' Ø¨Ù†Ø¯ Ú©Ø± Ú©Û' Ú¯Ú¾Ø± Ú©Û' Ø§Ù†Ø¯Ø± Ø±ÛÛŒÚºÛ" Ø§ÛŒØ¦Ø± Ù¾ÛŒÙˆØ±ÛŒÙØ§Ø¦Ø± Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ú©Ø±ÛŒÚºÛ""
+      urdu: "انتہائی خطرناک۔ صحت کی ایمرجنسی۔ سب کو تمام بیرونی سرگرمیوں سے گریز کرنا چاہیے۔ کھڑکیاں اور دروازے بند کر کے گھر کے اندر رہیں۔ ایئر پیوریفائر استعمال کریں۔"
     };
   }
 }
@@ -227,7 +227,7 @@ app.post('/nearest-aqi', async (req, res) => {
   }
 });
 
-// New endpoint for BotSailor GPS integration - FIXED LOCATION EXTRACTION
+// New endpoint for BotSailor GPS integration
 app.post('/botsailor-location', async (req, res) => {
   try {
     const { subscriber_id, phone_number } = req.body;
@@ -241,71 +241,71 @@ app.post('/botsailor-location', async (req, res) => {
       });
     }
 
-    // Step 1: Get last 10 messages from BotSailor to extract GPS location
+    // Step 1: Get last 10 messages from BotSailor to extract GPS location (increased to capture all location shares)
     const botsailorApiUrl = `https://convodat.site/api/v1/whatsapp/get/conversation?apiToken=13881|CsusyanDTZNgwDfofBDycCCmiBmkfd0G5R9vN7Qtca3c6006&phone_number_id=740840432454977&phone_number=${phone_number}&limit=10&offset=1`;
     
     const conversationResponse = await axios.get(botsailorApiUrl, { timeout: 15000 });
     
     console.log('BotSailor API Response:', JSON.stringify(conversationResponse.data, null, 2));
     
-    // Step 2: Extract location from messages - IMPROVED TO HANDLE LANDMARKS
-    let latitude = null;
-    let longitude = null;
-    let latestTimestamp = 0;
-    let locationType = 'unknown';
-    
-    if (conversationResponse.data && conversationResponse.data.message) {
-      const messages = JSON.parse(conversationResponse.data.message);
-      
-      for (const key in messages) {
-        const messageContent = messages[key].message_content;
-        if (messageContent) {
-          try {
-            const parsedContent = JSON.parse(messageContent);
-            
-            // Check for location data in WhatsApp message structure
-            if (parsedContent.entry && Array.isArray(parsedContent.entry)) {
-              for (const entry of parsedContent.entry) {
-                if (entry.changes && Array.isArray(entry.changes)) {
-                  for (const change of entry.changes) {
-                    const msgs = change.value?.messages;
-                    if (msgs && Array.isArray(msgs)) {
-                      for (const msg of msgs) {
-                        // Check for location in message
-                        if (msg.location && msg.timestamp) {
-                          const loc = msg.location;
-                          const timestamp = parseInt(msg.timestamp) || 0;
-                          
-                          // Handle both GPS-only and landmark locations
-                          // Both types have latitude and longitude
-                          if (loc.latitude !== undefined && loc.longitude !== undefined && timestamp > latestTimestamp) {
-                            latitude = loc.latitude;
-                            longitude = loc.longitude;
-                            latestTimestamp = timestamp;
-                            
-                            locationType = loc.name || loc.address ? 'landmark' : 'GPS';
-                            console.log(`Found ${locationType} location at timestamp ${timestamp}:`, {
-                              lat: loc.latitude,
-                              lng: loc.longitude,
-                              name: loc.name || 'N/A',
-                              address: loc.address || 'N/A'
-                            });
-                          }
-                        }
+    // Step 2: Extract location from messages// Step 2: Extract location from messages - IMPROVED TO HANDLE LANDMARKS
+let latitude = null;
+let longitude = null;
+let latestTimestamp = 0;
+let locationType = 'unknown';
+
+if (conversationResponse.data && conversationResponse.data.message) {
+  const messages = JSON.parse(conversationResponse.data.message);
+  
+  for (const key in messages) {
+    const messageContent = messages[key].message_content;
+    if (messageContent) {
+      try {
+        const parsedContent = JSON.parse(messageContent);
+        
+        // Check for location data in WhatsApp message structure
+        if (parsedContent.entry && Array.isArray(parsedContent.entry)) {
+          for (const entry of parsedContent.entry) {
+            if (entry.changes && Array.isArray(entry.changes)) {
+              for (const change of entry.changes) {
+                const msgs = change.value?.messages;
+                if (msgs && Array.isArray(msgs)) {
+                  for (const msg of msgs) {
+                    // Check for location in message
+                    if (msg.location && msg.timestamp) {
+                      const loc = msg.location;
+                      const timestamp = parseInt(msg.timestamp) || 0;
+                      
+                      // Handle both GPS-only and landmark locations
+                      // Both types have latitude and longitude
+                      if (loc.latitude !== undefined && loc.longitude !== undefined && timestamp > latestTimestamp) {
+                        latitude = loc.latitude;
+                        longitude = loc.longitude;
+                        latestTimestamp = timestamp;
+                        
+                        locationType = loc.name || loc.address ? 'landmark' : 'GPS';
+                        console.log(`Found ${locationType} location at timestamp ${timestamp}:`, {
+                          lat: loc.latitude,
+                          lng: loc.longitude,
+                          name: loc.name || 'N/A',
+                          address: loc.address || 'N/A'
+                        });
                       }
                     }
                   }
                 }
               }
             }
-          } catch (parseError) {
-            // Skip messages that aren't valid JSON (like "HTTP API triggered")
-            console.log(`Skipping non-JSON message: ${messageContent.slice(0, 50)}`);
-            continue;
           }
         }
+      } catch (parseError) {
+        // Skip messages that aren't valid JSON (like "HTTP API triggered")
+        console.log(`Skipping non-JSON message: ${messageContent.slice(0, 50)}`);
+        continue;
       }
     }
+  }
+}
     
     if (!latitude || !longitude) {
       return res.json({
@@ -314,7 +314,7 @@ app.post('/botsailor-location', async (req, res) => {
       });
     }
 
-    console.log(`Extracted ${locationType} location:`, { latitude, longitude });
+    console.log('Extracted GPS:', { latitude, longitude });
 
     // Step 3: Find nearest station
     const liveStations = await fetchStations();
@@ -360,7 +360,6 @@ app.post('/botsailor-location', async (req, res) => {
       health_advice: healthAdvice,
       advisory_english: advisory.english,
       advisory_urdu: advisory.urdu,
-      location_type: locationType, // NEW: Track whether it was GPS or landmark
       message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${formattedPollutant}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 1373\nType 'menu' to return to main menu.`,
       timestamp: Date.now()
     };
@@ -372,7 +371,7 @@ app.post('/botsailor-location', async (req, res) => {
     console.error('Error in botsailor-location endpoint:', error.message);
     return res.json({
       success: false,
-      message: "Error processing location. Please try again or contact helpline: 1373"
+      message: "Error processing location. Please try again"
     });
   }
 });
@@ -397,12 +396,10 @@ app.get('/get-aqi/:subscriber_id', (req, res) => {
 app.get('/', (req, res) => {
   res.json({ 
     status: 'EPA AQI Webhook Server Running',
-    version: '2.1 - Fixed Landmark Location Extraction',
     endpoints: {
       cityBased: 'POST /nearest-aqi',
       gpsStore: 'POST /botsailor-location',
-      gpsRetrieve: 'GET /get-aqi/:subscriber_id',
-      cityAverage: 'GET /aqi-city/:cityname'
+      gpsRetrieve: 'GET /get-aqi/:subscriber_id'
     }
   });
 });
