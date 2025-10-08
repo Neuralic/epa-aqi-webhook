@@ -366,7 +366,10 @@ app.get('/aqi-city/:cityname', async (req, res) => {
   try {
     const { cityname } = req.params;
     
-    console.log(`Fetching AQI data for city: ${cityname}`);
+    // Decode URL-encoded characters (+ becomes space, %20 becomes space)
+    const decodedCity = decodeURIComponent(cityname.replace(/\+/g, ' '));
+    
+    console.log(`Fetching AQI data for city: ${decodedCity}`);
     
     // Fetch all AQI data from EPA API
     const response = await axios.get('https://api.epd-aqms-pk.com/aqi', {
@@ -391,10 +394,10 @@ app.get('/aqi-city/:cityname', async (req, res) => {
       'sheikhupura': 'Sheikhupura'
     };
     
-    const cityKey = cityname.toLowerCase().replace(/\s+/g, '');
-    const cityPattern = citySuffixes[cityKey] || cityname;
+    const cityKey = decodedCity.toLowerCase().replace(/\s+/g, '');
+    const cityPattern = citySuffixes[cityKey] || decodedCity;
     
-    console.log('City input:', cityname, 'Pattern to search:', cityPattern);
+    console.log('City input:', decodedCity, 'Pattern to search:', cityPattern);
     
     // Filter stations that match the city
     const cityStations = [];
