@@ -104,6 +104,18 @@ async function fetchStationAQI(stationName) {
   return response.data;
 }
 
+// Helper function to format pollutant names
+function formatPollutant(pollutant) {
+  if (!pollutant) return "N/A";
+  
+  // Convert PM25 to PM2.5 and PM10 stays PM10
+  if (pollutant === "PM25") return "PM2.5";
+  if (pollutant === "PM10") return "PM10";
+  
+  // Return other pollutants as-is (O3, NO2, SO2, CO, etc.)
+  return pollutant;
+}
+
 // Helper function to get health advice based on AQI
 function getHealthAdvice(aqi) {
   if (aqi <= 50) {
@@ -304,6 +316,9 @@ app.post('/botsailor-location', async (req, res) => {
 
     const healthAdvice = getHealthAdvice(aqiData.AQI);
     const advisory = getHealthAdvisory(aqiData.AQI);
+    
+    // Format pollutant name
+    const formattedPollutant = formatPollutant(aqiData.Dominant_Pollutant);
 
     // Step 5: Store result and return
     const result = {
@@ -312,12 +327,12 @@ app.post('/botsailor-location', async (req, res) => {
       station_name: nearest.name,
       aqi: aqiData.AQI.toString(),
       air_category: aqiData.AQI_category,
-      pollutant: aqiData.Dominant_Pollutant || "PM2.5",
+      pollutant: formattedPollutant,
       last_updated: aqiData.Date_Time,
       health_advice: healthAdvice,
       advisory_english: advisory.english,
       advisory_urdu: advisory.urdu,
-      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM2.5"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 1373\nType 'menu' to return to main menu.`,
+      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${formattedPollutant}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 1373\nType 'menu' to return to main menu.`,
       timestamp: Date.now()
     };
 
@@ -408,7 +423,7 @@ app.get('/aqi-city/:cityname', async (req, res) => {
           name: stationName,
           aqi: stationData.AQI,
           category: stationData.AQI_category,
-          pollutant: stationData.Dominant_Pollutant,
+          pollutant: formatPollutant(stationData.Dominant_Pollutant),
           updated: stationData.Date_Time
         });
       }
@@ -464,7 +479,6 @@ app.get('/aqi-city/:cityname', async (req, res) => {
     message += `*Dominant Pollutant:* ${dominantPollutant}\n`;
     message += `*Monitoring Stations:* ${cityStations.length}\n`;
     message += `*Last Updated:* ${latestUpdate}\n\n`;
-    message += `📞 *Helpline:* 1373`;
     
     return res.json({
       success: true,
