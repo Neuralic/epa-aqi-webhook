@@ -121,6 +121,41 @@ function getHealthAdvice(aqi) {
   }
 }
 
+// Helper function to get bilingual health advisories
+function getHealthAdvisory(aqi) {
+  if (aqi <= 50) {
+    return {
+      english: "Air quality is good. Ideal for outdoor activities.",
+      urdu: "ہوا کا معیار اچھا ہے۔ باہر کی سرگرمیوں کے لیے موزوں ہے۔"
+    };
+  } else if (aqi <= 100) {
+    return {
+      english: "Air quality is satisfactory. Unusually sensitive people should consider limiting prolonged outdoor exertion.",
+      urdu: "ہوا کا معیار تسلی بخش ہے۔ حساس افراد کو طویل بیرونی سرگرمیوں کو محدود کرنے پر غور کرنا چاہیے۔"
+    };
+  } else if (aqi <= 150) {
+    return {
+      english: "Unhealthy for sensitive groups. Children, elderly, pregnant women, and people with respiratory conditions should reduce outdoor activities.",
+      urdu: "حساس گروپوں کے لیے نقصان دہ۔ بچوں، بزرگوں، حاملہ خواتین اور سانس کی بیماریوں والے افراد کو بیرونی سرگرمیاں کم کرنی چاہئیں۔"
+    };
+  } else if (aqi <= 200) {
+    return {
+      english: "Unhealthy. Everyone should limit prolonged outdoor exertion. Sensitive groups should avoid outdoor activities. Use N95 masks if going outside.",
+      urdu: "نقصان دہ۔ سب کو طویل بیرونی سرگرمیاں محدود کرنی چاہئیں۔ حساس گروپس کو باہر جانے سے گریز کرنا چاہیے۔ باہر جاتے وقت N95 ماسک استعمال کریں۔"
+    };
+  } else if (aqi <= 300) {
+    return {
+      english: "Very unhealthy. Everyone should avoid all outdoor physical activities. Keep windows closed. Use air purifiers indoors.",
+      urdu: "بہت نقصان دہ۔ سب کو تمام بیرونی جسمانی سرگرمیوں سے گریز کرنا چاہیے۔ کھڑکیاں بند رکھیں۔ گھر کے اندر ایئر پیوریفائر استعمال کریں۔"
+    };
+  } else {
+    return {
+      english: "Hazardous. Health emergency. Everyone should avoid all outdoor activities. Stay indoors with windows and doors sealed. Use air purifiers.",
+      urdu: "انتہائی خطرناک۔ صحت کی ایمرجنسی۔ سب کو تمام بیرونی سرگرمیوں سے گریز کرنا چاہیے۔ کھڑکیاں اور دروازے بند کر کے گھر کے اندر رہیں۔ ایئر پیوریفائر استعمال کریں۔"
+    };
+  }
+}
+
 // Original endpoint for city-based AQI
 app.post('/nearest-aqi', async (req, res) => {
   try {
@@ -268,6 +303,7 @@ app.post('/botsailor-location', async (req, res) => {
     }
 
     const healthAdvice = getHealthAdvice(aqiData.AQI);
+    const advisory = getHealthAdvisory(aqiData.AQI);
 
     // Step 5: Store result and return
     const result = {
@@ -279,7 +315,9 @@ app.post('/botsailor-location', async (req, res) => {
       pollutant: aqiData.Dominant_Pollutant || "PM2.5",
       last_updated: aqiData.Date_Time,
       health_advice: healthAdvice,
-      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM2.5"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 0800-12345\nType 'menu' to return to main menu.`,
+      advisory_english: advisory.english,
+      advisory_urdu: advisory.urdu,
+      message: `Your location is ${nearest.distance.toFixed(1)} Km away from Nearest Monitoring Station: *${nearest.name}*\n\nAQI = ${aqiData.AQI}\nAir Quality: ${aqiData.AQI_category}\nDominant Pollutant: ${aqiData.Dominant_Pollutant || "PM2.5"}\nLast Updated at: ${aqiData.Date_Time}\n\nHealth Advisory:\n${healthAdvice}\n\nHelpline: 1373\nType 'menu' to return to main menu.`,
       timestamp: Date.now()
     };
 
@@ -353,8 +391,10 @@ app.get('/aqi-city/:cityname', async (req, res) => {
       'sheikhupura': 'Sheikhupura'
     };
     
-    const cityKey = cityname.toLowerCase();
+    const cityKey = cityname.toLowerCase().replace(/\s+/g, '');
     const cityPattern = citySuffixes[cityKey] || cityname;
+    
+    console.log('City input:', cityname, 'Pattern to search:', cityPattern);
     
     // Filter stations that match the city
     const cityStations = [];
@@ -370,6 +410,8 @@ app.get('/aqi-city/:cityname', async (req, res) => {
         });
       }
     }
+    
+    console.log('Found stations:', cityStations.length, cityStations.map(s => s.name));
     
     if (cityStations.length === 0) {
       return res.json({
@@ -403,12 +445,15 @@ app.get('/aqi-city/:cityname', async (req, res) => {
       pollutantCounts[a] > pollutantCounts[b] ? a : b
     );
     
-    // Format simple message with average
-    let message = `*Air Quality - ${cityname.toUpperCase()}*\n\n`;
-    message += `*Average AQI:* ${averageAQI}\n`;
-    message += `*Air Quality:* ${category}\n`;
+    // Get bilingual health advisory
+    const advisory = getHealthAdvisory(averageAQI);
+    
+    // Format message with clean visual styling
+    let message = `🌫️ *Air Quality - ${cityname.toUpperCase()}*\n\n`;
+    message += `*Average AQI:* _${averageAQI}_  (${category})\n`;
     message += `*Dominant Pollutant:* ${dominantPollutant}\n`;
-    message += `*Based on:* ${cityStations.length} monitoring stations\n\n`;
+    message += `*Monitoring Stations:* ${cityStations.length}\n\n`;
+    message += `📞 *Helpline:* 1373`;
     
     return res.json({
       success: true,
@@ -417,6 +462,8 @@ app.get('/aqi-city/:cityname', async (req, res) => {
       average_aqi: averageAQI,
       air_category: category,
       dominant_pollutant: dominantPollutant,
+      advisory_english: advisory.english,
+      advisory_urdu: advisory.urdu,
       message: message
     });
     
