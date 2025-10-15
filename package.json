@@ -1,19 +1,30 @@
 {
   "name": "epa-aqi-webhook",
-  "version": "1.0.0",
-  "description": "EPA Punjab AQI Webhook for WhatsApp Bot",
+  "version": "2.0.0",
+  "description": "EPA AQI Webhook for BotSailor Integration with API Key Authentication",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "keywords": ["epa", "aqi", "webhook", "whatsapp"],
-  "author": "EPA Punjab",
-  "license": "MIT",
+  "keywords": [
+    "epa",
+    "aqi",
+    "air-quality",
+    "webhook",
+    "botsailor"
+  ],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   }
 }
