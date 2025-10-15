@@ -1,3 +1,6 @@
+// EPA AQI Webhook for BotSailor Integration
+// Updated with API Key Authentication (October 2025)
+
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -101,20 +104,29 @@ app.post('/botsailor-location', async (req, res) => {
     }
 
     // Fetch conversation from BotSailor to get GPS location
-    const botsailorUrl = `https://app.botsailor.com/api/conversation/load-conversation?subscriber_id=${subscriber_id}&bot_id=${BOTSAILOR_BOT_ID}`;
-    const botsailorResponse = await axios.get(botsailorUrl, {
-      headers: { 'X-API-KEY': BOTSAILOR_API_KEY }
+    // Updated to use correct BotSailor API endpoint (v1)
+    const botsailorUrl = `https://botsailor.com/api/v1/whatsapp/get/conversation`;
+    const botsailorResponse = await axios.post(botsailorUrl, {
+      apiToken: BOTSAILOR_API_KEY,
+      phone_number_id: BOTSAILOR_BOT_ID,
+      phone_number: phone_number,
+      limit: 20,
+      offset: 1
     });
 
     console.log('BotSailor API Response:', botsailorResponse.data);
 
-    const messages = JSON.parse(botsailorResponse.data.message);
+    // Check if response is valid
+    if (botsailorResponse.data.status !== "1" || !botsailorResponse.data.message) {
+      return res.status(400).json({ error: 'Invalid BotSailor API response' });
+    }
+
+    const messages = botsailorResponse.data.message; // This is already an array
     let gpsLocation = null;
     let latestTimestamp = 0;
 
     // Find the most recent GPS location
-    for (const msgId in messages) {
-      const msg = messages[msgId];
+    for (const msg of messages) {
       if (msg.sender === 'user') {
         try {
           const content = JSON.parse(msg.message_content);
