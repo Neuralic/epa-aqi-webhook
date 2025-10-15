@@ -1,6 +1,3 @@
-// EPA AQI Webhook for BotSailor Integration
-// Updated with API Key Authentication (October 2025)
-
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
